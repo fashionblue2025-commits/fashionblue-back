@@ -1,0 +1,31 @@
+# Docker Compose para Desarrollo
+# Uso: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  postgres:
+    # En desarrollo, exponemos el puerto para acceso directo
+    ports:
+      - "5432:5432"
+    # Logs más verbosos en desarrollo
+    command: postgres -c log_statement=all
+
+  api:
+    # En desarrollo, montamos el código fuente para hot reload
+    build:
+      target: development
+    volumes:
+      - .:/app
+      - /app/tmp
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+      LOG_FORMAT: text
+    # Reiniciar automáticamente en desarrollo
+    restart: "no"
+
+  pgadmin:
+    # pgAdmin solo en desarrollo
+    profiles:
+      - dev

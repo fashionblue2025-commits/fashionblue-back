@@ -1,0 +1,1271 @@
+{
+  "info": {
+    "name": "Fashion Blue API",
+    "description": "Colección completa de endpoints de Fashion Blue",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@fashionblue.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"vendedor@fashionblue.com\",\n  \"password\": \"vendedor123\",\n  \"first_name\": \"Juan\",\n  \"last_name\": \"P\\u00e9rez\",\n  \"role\": \"SELLER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nuevo@fashionblue.com\",\n  \"password\": \"password123\",\n  \"first_name\": \"Nuevo\",\n  \"last_name\": \"Usuario\",\n  \"role\": \"SELLER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"actualizado@fashionblue.com\",\n  \"first_name\": \"Nombre\",\n  \"last_name\": \"Actualizado\",\n  \"role\": \"SELLER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"password123\",\n  \"new_password\": \"newpassword456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/1/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "1",
+                "password"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chaquetas Premium\",\n  \"description\": \"Chaquetas de alta calidad\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Category by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chaquetas Premium Actualizado\",\n  \"description\": \"Nueva descripci\\u00f3n\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/categories/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chaqueta de Cuero Premium\",\n  \"description\": \"Chaqueta de cuero genuino\",\n  \"sku\": \"CHQ-CUERO-001\",\n  \"category_id\": 1,\n  \"material_cost\": 80000,\n  \"labor_cost\": 50000,\n  \"unit_price\": 250000,\n  \"wholesale_price\": 200000,\n  \"min_wholesale_qty\": 10,\n  \"stock\": 50,\n  \"min_stock\": 10,\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chaqueta de Cuero Premium Actualizada\",\n  \"unit_price\": 260000,\n  \"stock\": 45\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Low Stock Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/low-stock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "low-stock"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sizes",
+      "item": [
+        {
+          "name": "List All Sizes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sizes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sizes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Size by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sizes/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sizes",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Sizes by Type (SHIRT)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sizes?type=SHIRT",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sizes"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "SHIRT"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Sizes by Type (PANTS)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sizes?type=PANTS",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sizes"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "PANTS"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Sizes by Type (SHOES)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sizes?type=SHOES",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sizes"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "SHOES"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment Methods",
+      "item": [
+        {
+          "name": "List Payment Methods",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payment-methods",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payment-methods"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Active Payment Methods",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payment-methods?active_only=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payment-methods"
+              ],
+              "query": [
+                {
+                  "key": "active_only",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mar\\u00eda Gonz\\u00e1lez\",\n  \"phone\": \"3001234567\",\n  \"address\": \"Calle 123 #45-67, Bogot\\u00e1\",\n  \"risk_level\": \"LOW\",\n  \"shirt_size_id\": 3,\n  \"pants_size_id\": 5,\n  \"shoes_size_id\": 10,\n  \"birthday\": \"1990-05-15T00:00:00Z\",\n  \"payment_frequency\": \"BIWEEKLY\",\n  \"payment_days\": \"2,17\",\n  \"notes\": \"Cliente frecuente\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customers/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mar\\u00eda Gonz\\u00e1lez P\\u00e9rez\",\n  \"phone\": \"3001234567\",\n  \"address\": \"Nueva direcci\\u00f3n\",\n  \"risk_level\": \"LOW\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customers/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customers/1/balance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "1",
+                "balance"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customers/1/history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "1",
+                "history"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Upcoming Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customers/upcoming-payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "upcoming-payments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Upcoming Payments (Custom Days)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customers/upcoming-payments?days=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "upcoming-payments"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Transaction - DEUDA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 1,\n  \"type\": \"DEUDA\",\n  \"amount\": 150000,\n  \"concept\": \"Venta de chaqueta de cuero\",\n  \"date\": \"2024-11-20T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers/transactions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "transactions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Transaction - ABONO",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 1,\n  \"type\": \"ABONO\",\n  \"amount\": 50000,\n  \"payment_method_id\": 1,\n  \"concept\": \"Abono quincenal\",\n  \"date\": \"2024-11-20T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers/transactions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "transactions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Payment (Legacy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000,\n  \"payment_method_id\": 1,\n  \"concept\": \"Abono quincenal\",\n  \"date\": \"2024-11-20T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers/1/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "1",
+                "payments"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Suppliers",
+      "item": [
+        {
+          "name": "Create Supplier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Textiles del Norte S.A.S\",\n  \"contact_name\": \"Carlos Ram\\u00edrez\",\n  \"email\": \"ventas@textilesnorte.com\",\n  \"phone\": \"3201234567\",\n  \"address\": \"Zona Industrial Calle 80, Barranquilla\",\n  \"notes\": \"Proveedor principal de telas\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/suppliers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "suppliers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Suppliers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/suppliers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "suppliers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Supplier by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/suppliers/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "suppliers",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Supplier",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Textiles del Norte S.A.S\",\n  \"contact_name\": \"Carlos Ram\\u00edrez G\\u00f3mez\",\n  \"email\": \"ventas@textilesnorte.com\",\n  \"phone\": \"3201234567\",\n  \"address\": \"Nueva direcci\\u00f3n actualizada\",\n  \"notes\": \"Proveedor principal - Actualizado\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/suppliers/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "suppliers",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Supplier",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/suppliers/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "suppliers",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Suppliers by Name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/suppliers?name=textiles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "suppliers"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "textiles"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Capital Injections",
+      "item": [
+        {
+          "name": "Create Capital Injection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000000,\n  \"description\": \"Inversi\\u00f3n inicial para compra de materiales\",\n  \"source\": \"Inversi\\u00f3n personal\",\n  \"date\": \"2024-01-15T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/capital-injections",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "capital-injections"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Capital Injections",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/capital-injections",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "capital-injections"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Capital Injection by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/capital-injections/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "capital-injections",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Total Capital",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/capital-injections/total",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "capital-injections",
+                "total"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
