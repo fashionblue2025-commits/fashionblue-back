@@ -8,14 +8,40 @@ import (
 )
 
 type CreateProductUseCase struct {
-	productRepo ports.ProductRepository
+	productRepo        ports.ProductRepository
+	productVariantRepo ports.ProductVariantRepository
 }
 
-func NewCreateProductUseCase(productRepo ports.ProductRepository) *CreateProductUseCase {
-	return &CreateProductUseCase{productRepo: productRepo}
+func NewCreateProductUseCase(
+	productRepo ports.ProductRepository,
+	productVariantRepo ports.ProductVariantRepository,
+) *CreateProductUseCase {
+	return &CreateProductUseCase{
+		productRepo:        productRepo,
+		productVariantRepo: productVariantRepo,
+	}
 }
 
 func (uc *CreateProductUseCase) Execute(ctx context.Context, product *entities.Product) error {
+	// Calcular costo de producción
 	product.CalculateProductionCost()
-	return uc.productRepo.Create(ctx, product)
+
+	// Preparar variantes antes de crear el producto
+	if len(product.Variants) > 0 {
+		for i := range product.Variants {
+			variant := &product.Variants[i]
+
+			// Si la variante no tiene precio, usar el del producto base
+			if variant.UnitPrice == 0 {
+				variant.UnitPrice = product.UnitPrice
+			}
+		}
+	}
+
+	// Crear el producto base (GORM creará las variantes automáticamente por la relación)
+	if err := uc.productRepo.Create(ctx, product); err != nil {
+		return err
+	}
+
+	return nil
 }

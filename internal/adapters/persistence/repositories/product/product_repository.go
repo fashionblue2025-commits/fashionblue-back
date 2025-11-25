@@ -31,16 +31,31 @@ func (r *productRepository) Create(ctx context.Context, product *entities.Produc
 
 func (r *productRepository) GetByID(ctx context.Context, id uint) (*entities.Product, error) {
 	var model models.ProductModel
-	err := r.db.WithContext(ctx).Preload("Category").First(&model, id).Error
+	err := r.db.WithContext(ctx).
+		Preload("Category").
+		Preload("Variants").
+		Preload("Variants.Size").
+		First(&model, id).Error
 	if err != nil {
 		return nil, err
 	}
 	return model.ToEntity(), nil
 }
 
-func (r *productRepository) GetBySKU(ctx context.Context, sku string) (*entities.Product, error) {
+// GetByAttributes busca un producto por nombre, color y talla
+// Esto permite identificar productos únicos en el inventario
+func (r *productRepository) GetByAttributes(ctx context.Context, name, color string, sizeID *uint) (*entities.Product, error) {
 	var model models.ProductModel
-	err := r.db.WithContext(ctx).Preload("Category").Where("sku = ?", sku).First(&model).Error
+	query := r.db.WithContext(ctx).Preload("Category").Preload("Size").Where("name = ? AND color = ?", name, color)
+
+	// Manejar sizeID que puede ser NULL
+	if sizeID != nil {
+		query = query.Where("size_id = ?", *sizeID)
+	} else {
+		query = query.Where("size_id IS NULL")
+	}
+
+	err := query.First(&model).Error
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +64,10 @@ func (r *productRepository) GetBySKU(ctx context.Context, sku string) (*entities
 
 func (r *productRepository) List(ctx context.Context, filters map[string]interface{}) ([]entities.Product, error) {
 	var modelList []models.ProductModel
-	query := r.db.WithContext(ctx).Preload("Category")
+	query := r.db.WithContext(ctx).
+		Preload("Category").
+		Preload("Variants").
+		Preload("Variants.Size")
 
 	if categoryID, ok := filters["category_id"].(uint); ok && categoryID > 0 {
 		query = query.Where("category_id = ?", categoryID)
@@ -79,6 +97,8 @@ func (r *productRepository) ListByCategory(ctx context.Context, categoryID uint)
 	var modelList []models.ProductModel
 	err := r.db.WithContext(ctx).
 		Preload("Category").
+		Preload("Variants").
+		Preload("Variants.Size").
 		Where("category_id = ? AND is_active = ?", categoryID, true).
 		Find(&modelList).Error
 	if err != nil {
@@ -121,6 +141,8 @@ func (r *productRepository) GetLowStockProducts(ctx context.Context) ([]entities
 	var modelList []models.ProductModel
 	err := r.db.WithContext(ctx).
 		Preload("Category").
+		Preload("Variants").
+		Preload("Variants.Size").
 		Where("stock <= min_stock AND is_active = ?", true).
 		Find(&modelList).Error
 	if err != nil {

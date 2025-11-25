@@ -31,7 +31,11 @@ func (r *customerRepository) Create(ctx context.Context, customer *entities.Cust
 
 func (r *customerRepository) GetByID(ctx context.Context, id uint) (*entities.Customer, error) {
 	var model models.CustomerModel
-	err := r.db.WithContext(ctx).First(&model, id).Error
+	err := r.db.WithContext(ctx).
+		Preload("ShirtSize").
+		Preload("PantsSize").
+		Preload("ShoesSize").
+		First(&model, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +62,10 @@ func (r *customerRepository) GetByDocument(ctx context.Context, documentNum stri
 
 func (r *customerRepository) List(ctx context.Context, filters map[string]interface{}) ([]entities.Customer, error) {
 	var modelList []models.CustomerModel
-	query := r.db.WithContext(ctx)
+	query := r.db.WithContext(ctx).
+		Preload("ShirtSize").
+		Preload("PantsSize").
+		Preload("ShoesSize")
 
 	if customerType, ok := filters["type"].(string); ok && customerType != "" {
 		query = query.Where("type = ?", customerType)
@@ -69,8 +76,45 @@ func (r *customerRepository) List(ctx context.Context, filters map[string]interf
 	}
 
 	if name, ok := filters["name"].(string); ok && name != "" {
-		query = query.Where("first_name ILIKE ? OR last_name ILIKE ?", "%"+name+"%", "%"+name+"%")
+		query = query.Where("name ILIKE ?", "%"+name+"%")
 	}
+
+	// Aplicar ordenamiento
+	sortBy := "name ASC" // Por defecto ordenar por nombre
+	if sort, ok := filters["sort"].(string); ok && sort != "" {
+		switch sort {
+		case "name":
+			sortBy = "name ASC"
+		case "balance":
+			// Para ordenar por balance, necesitamos hacer una subconsulta
+			query = query.Select("customers.*, COALESCE((SELECT SUM(CASE WHEN type = 'DEUDA' THEN amount WHEN type = 'ABONO' THEN -amount END) FROM customer_transactions WHERE customer_id = customers.id), 0) as balance").
+				Order("balance DESC")
+			// Retornar sin aplicar el Order adicional
+			if err := query.Find(&modelList).Error; err != nil {
+				return nil, err
+			}
+			customers := make([]entities.Customer, len(modelList))
+			for i, model := range modelList {
+				customers[i] = *model.ToEntity()
+			}
+			return customers, nil
+		case "balance_asc":
+			// Ordenar por balance ascendente
+			query = query.Select("customers.*, COALESCE((SELECT SUM(CASE WHEN type = 'DEUDA' THEN amount WHEN type = 'ABONO' THEN -amount END) FROM customer_transactions WHERE customer_id = customers.id), 0) as balance").
+				Order("balance ASC")
+			// Retornar sin aplicar el Order adicional
+			if err := query.Find(&modelList).Error; err != nil {
+				return nil, err
+			}
+			customers := make([]entities.Customer, len(modelList))
+			for i, model := range modelList {
+				customers[i] = *model.ToEntity()
+			}
+			return customers, nil
+		}
+	}
+
+	query = query.Order(sortBy)
 
 	if err := query.Find(&modelList).Error; err != nil {
 		return nil, err

@@ -11,12 +11,13 @@ import (
 
 // Config contiene toda la configuración de la aplicación
 type Config struct {
-	App      AppConfig
-	Database DatabaseConfig
-	JWT      JWTConfig
-	Upload   UploadConfig
-	CORS     CORSConfig
-	Log      LogConfig
+	App        AppConfig
+	Database   DatabaseConfig
+	JWT        JWTConfig
+	Upload     UploadConfig
+	Cloudinary CloudinaryConfig
+	CORS       CORSConfig
+	Log        LogConfig
 }
 
 // AppConfig configuración de la aplicación
@@ -56,6 +57,15 @@ func (j *JWTConfig) GetExpiration() time.Duration {
 type UploadConfig struct {
 	MaxSize int64
 	Path    string
+}
+
+// CloudinaryConfig configuración de Cloudinary
+type CloudinaryConfig struct {
+	CloudName string
+	APIKey    string
+	APISecret string
+	Folder    string
+	Enabled   bool
 }
 
 // CORSConfig configuración de CORS
@@ -98,6 +108,13 @@ func Load() (*Config, error) {
 		Upload: UploadConfig{
 			MaxSize: maxUploadSize,
 			Path:    getEnv("UPLOAD_PATH", "./uploads"),
+		},
+		Cloudinary: CloudinaryConfig{
+			CloudName: getEnv("CLOUDINARY_CLOUD_NAME", ""),
+			APIKey:    getEnv("CLOUDINARY_API_KEY", ""),
+			APISecret: getEnv("CLOUDINARY_API_SECRET", ""),
+			Folder:    getEnv("CLOUDINARY_FOLDER", "fashion-blue/orders"),
+			Enabled:   getEnv("CLOUDINARY_ENABLED", "false") == "true",
 		},
 		CORS: CORSConfig{
 			AllowedOrigins: getEnv("CORS_ALLOWED_ORIGINS", "*"),

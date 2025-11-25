@@ -2,6 +2,7 @@ package customer
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/dto"
@@ -58,7 +59,7 @@ type CreateCustomerRequest struct {
 	ShirtSizeID *uint              `json:"shirt_size_id"`
 	PantsSizeID *uint              `json:"pants_size_id"`
 	ShoesSizeID *uint              `json:"shoes_size_id"`
-	Birthday    *time.Time         `json:"birthday"`
+	Birthday    *string            `json:"birthday"` // Formato: YYYY-MM-DD
 	Notes       string             `json:"notes"`
 }
 
@@ -70,7 +71,7 @@ type UpdateCustomerRequest struct {
 	ShirtSizeID *uint              `json:"shirt_size_id"`
 	PantsSizeID *uint              `json:"pants_size_id"`
 	ShoesSizeID *uint              `json:"shoes_size_id"`
-	Birthday    *time.Time         `json:"birthday"`
+	Birthday    *string            `json:"birthday"` // Formato: YYYY-MM-DD
 	Notes       string             `json:"notes"`
 	IsActive    *bool              `json:"is_active"`
 }
@@ -81,6 +82,22 @@ func (h *CustomerHandler) Create(c echo.Context) error {
 		return response.BadRequest(c, "Invalid request body", err)
 	}
 
+	// Parsear birthday si está presente
+	var parsedBirthday *time.Time
+	if req.Birthday != nil && *req.Birthday != "" {
+		birthdayStr := strings.TrimSpace(*req.Birthday)
+
+		// Intentar parsear con formato de solo fecha
+		if t, err := time.Parse("2006-01-02", birthdayStr); err == nil {
+			parsedBirthday = &t
+		} else if t, err := time.Parse(time.RFC3339, birthdayStr); err == nil {
+			// Intentar parsear con formato RFC3339 completo
+			parsedBirthday = &t
+		} else {
+			return response.BadRequest(c, "Invalid birthday format. Use YYYY-MM-DD", err)
+		}
+	}
+
 	cust := &entities.Customer{
 		Name:        req.Name,
 		Phone:       req.Phone,
@@ -89,7 +106,7 @@ func (h *CustomerHandler) Create(c echo.Context) error {
 		ShirtSizeID: req.ShirtSizeID,
 		PantsSizeID: req.PantsSizeID,
 		ShoesSizeID: req.ShoesSizeID,
-		Birthday:    req.Birthday,
+		Birthday:    parsedBirthday,
 		Notes:       req.Notes,
 		IsActive:    true,
 	}
@@ -118,6 +135,12 @@ func (h *CustomerHandler) GetByID(c echo.Context) error {
 	// Convertir a DTO
 	customerDTO := dto.ToCustomerDTO(cust)
 
+	// Agregar balance
+	balance, err := h.getBalanceUC.Execute(c.Request().Context(), uint(id))
+	if err == nil {
+		customerDTO.Balance = &balance
+	}
+
 	return response.OK(c, "Customer retrieved successfully", customerDTO)
 }
 
@@ -128,13 +151,28 @@ func (h *CustomerHandler) List(c echo.Context) error {
 		filters["name"] = name
 	}
 
+	// Parámetro de ordenamiento (por defecto: name)
+	sortBy := c.QueryParam("sort")
+	if sortBy == "" {
+		sortBy = "name"
+	}
+	filters["sort"] = sortBy
+
 	customers, err := h.listCustomersUC.Execute(c.Request().Context(), filters)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to retrieve customers", err)
 	}
 
-	// Convertir a DTOs
+	// Convertir a DTOs e incluir balance
 	customerDTOs := dto.ToCustomerDTOList(customers)
+
+	// Agregar balance a cada cliente
+	for i := range customerDTOs {
+		balance, err := h.getBalanceUC.Execute(c.Request().Context(), customerDTOs[i].ID)
+		if err == nil {
+			customerDTOs[i].Balance = &balance
+		}
+	}
 
 	return response.OK(c, "Customers retrieved successfully", customerDTOs)
 }
@@ -178,8 +216,22 @@ func (h *CustomerHandler) Update(c echo.Context) error {
 	if req.ShoesSizeID != nil {
 		existingCustomer.ShoesSizeID = req.ShoesSizeID
 	}
-	if req.Birthday != nil {
-		existingCustomer.Birthday = req.Birthday
+	if req.Birthday != nil && *req.Birthday != "" {
+		// Parsear la fecha en formato YYYY-MM-DD o YYYY-MM-DDTHH:MM:SSZ
+		birthdayStr := strings.TrimSpace(*req.Birthday)
+		var parsedBirthday *time.Time
+
+		// Intentar parsear con formato de solo fecha
+		if t, err := time.Parse("2006-01-02", birthdayStr); err == nil {
+			parsedBirthday = &t
+		} else if t, err := time.Parse(time.RFC3339, birthdayStr); err == nil {
+			// Intentar parsear con formato RFC3339 completo
+			parsedBirthday = &t
+		} else {
+			return response.BadRequest(c, "Invalid birthday format. Use YYYY-MM-DD", err)
+		}
+
+		existingCustomer.Birthday = parsedBirthday
 	}
 	if req.Notes != "" {
 		existingCustomer.Notes = req.Notes
@@ -220,10 +272,22 @@ func (h *CustomerHandler) GetHistory(c echo.Context) error {
 		return response.InternalServerError(c, "Failed to get customer history", err)
 	}
 
+	// Obtener balance del cliente
+	balance, err := h.getBalanceUC.Execute(c.Request().Context(), uint(id))
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get customer balance", err)
+	}
+
 	// Convertir a DTOs
 	historyDTOs := dto.ToCustomerTransactionDTOListFromSlice(history)
 
-	return response.OK(c, "Customer history retrieved successfully", historyDTOs)
+	// Incluir balance en la respuesta
+	responseData := map[string]interface{}{
+		"balance":      balance,
+		"transactions": historyDTOs,
+	}
+
+	return response.OK(c, "Customer history retrieved successfully", responseData)
 }
 
 // CreatePayment crea un abono/pago de un cliente

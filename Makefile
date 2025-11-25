@@ -54,4 +54,13 @@ format: ## Formatear código
 	go fmt ./...
 	goimports -w .
 
+swagger: ## Generar documentación Swagger
+	@echo "🔍 Generando documentación Swagger..."
+	@go run scripts/generate_swagger.go
+	@echo "✅ Documentación generada en docs/swagger.json"
+
+swagger-ui: swagger ## Generar Swagger y abrir en navegador
+	@echo "🌐 Abriendo Swagger UI..."
+	@open https://editor.swagger.io/
+
 .DEFAULT_GOAL := help

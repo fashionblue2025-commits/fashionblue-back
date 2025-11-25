@@ -55,12 +55,15 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.UserModel{},
 		&models.CategoryModel{},
 		&models.ProductModel{},
+		&models.ProductPhotoModel{},  // Tabla de fotos de productos
 		&models.SizeModel{},          // Tabla de tallas
 		&models.PaymentMethodModel{}, // Tabla de métodos de pago
 		&models.CustomerModel{},
 		&models.CustomerTransactionModel{},
-		&models.SupplierModel{},         // Tabla de proveedores
-		&models.CapitalInjectionModel{}, // Tabla de inyecciones de capital
+		&models.SupplierModel{},   // Tabla de proveedores
+		&models.OrderModel{},      // Tabla de órdenes
+		&models.OrderItemModel{},  // Tabla de items de órdenes
+		&models.OrderPhotoModel{}, // Tabla de fotos de órdenes
 	)
 }
 

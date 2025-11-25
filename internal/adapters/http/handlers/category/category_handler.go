@@ -3,6 +3,7 @@ package category
 import (
 	"strconv"
 
+	"github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/dto"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/category"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/domain/entities"
 	"github.com/bryanarroyaveortiz/fashion-blue/pkg/response"
@@ -57,18 +58,26 @@ func (h *CategoryHandler) GetByID(c echo.Context) error {
 		return response.NotFound(c, "Category not found")
 	}
 
-	return response.OK(c, "Category retrieved successfully", cat)
+	return response.OK(c, "Category retrieved successfully", dto.ToCategoryDTO(cat))
 }
 
 func (h *CategoryHandler) List(c echo.Context) error {
 	filters := make(map[string]interface{})
+
+	isActive := c.QueryParam("is_active")
+	if isActive != "" {
+		isActiveBool, err := strconv.ParseBool(isActive)
+		if err == nil {
+			filters["is_active"] = isActiveBool
+		}
+	}
 
 	categories, err := h.listCategoriesUC.Execute(c.Request().Context(), filters)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to list categories", err)
 	}
 
-	return response.OK(c, "Categories retrieved successfully", categories)
+	return response.OK(c, "Categories retrieved successfully", dto.ToCategoryDTOList(categories))
 }
 
 func (h *CategoryHandler) Update(c echo.Context) error {

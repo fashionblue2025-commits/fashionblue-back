@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+.github
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Tests
+*_test.go
+testdata/
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Dependencies (ya están en go.mod/go.sum)
+vendor/
+
+# Uploads y temporales
+uploads/
+tmp/
+temp/
+*.log
+
+# Docker
+docker-compose*.yml
+Dockerfile
+.dockerignore
+
+# CI/CD
+.github/
+railway.json
+.do/
+
+# Scripts
+scripts/
+
+# Backups
+*.backup
+*.bak
+*.sql

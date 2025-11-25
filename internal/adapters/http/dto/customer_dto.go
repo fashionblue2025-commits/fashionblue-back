@@ -13,18 +13,30 @@ type CustomerDTO struct {
 	Phone            string    `json:"phone"`
 	Address          string    `json:"address,omitempty"`
 	RiskLevel        string    `json:"riskLevel"`
+	BirthDate        string    `json:"birthDate,omitempty"`
+	Notes            string    `json:"notes,omitempty"`
 	ShirtSizeID      *uint     `json:"shirtSizeId,omitempty"`
+	ShirtSize        *SizeDTO  `json:"shirtSize,omitempty"`
 	PantsSizeID      *uint     `json:"pantsSizeId,omitempty"`
+	PantsSize        *SizeDTO  `json:"pantsSize,omitempty"`
 	ShoesSizeID      *uint     `json:"shoesSizeId,omitempty"`
+	ShoesSize        *SizeDTO  `json:"shoesSize,omitempty"`
 	PaymentFrequency string    `json:"paymentFrequency,omitempty"`
 	PaymentDays      string    `json:"paymentDays,omitempty"`
+	Balance          *float64  `json:"balance,omitempty"` // Balance del cliente (opcional)
 	CreatedAt        time.Time `json:"createdAt"`
 	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
 // ToCustomerDTO convierte una entidad Customer a DTO
 func ToCustomerDTO(customer *entities.Customer) CustomerDTO {
-	return CustomerDTO{
+	// Formatear birthDate si existe
+	birthDate := ""
+	if customer.Birthday != nil {
+		birthDate = customer.Birthday.Format("2006-01-02")
+	}
+
+	dto := CustomerDTO{
 		ID:               customer.ID,
 		Name:             customer.Name,
 		Phone:            customer.Phone,
@@ -35,9 +47,24 @@ func ToCustomerDTO(customer *entities.Customer) CustomerDTO {
 		ShoesSizeID:      customer.ShoesSizeID,
 		PaymentFrequency: string(customer.PaymentFrequency),
 		PaymentDays:      customer.PaymentDays,
+		BirthDate:        birthDate,
+		Notes:            customer.Notes,
 		CreatedAt:        customer.CreatedAt,
 		UpdatedAt:        customer.UpdatedAt,
 	}
+
+	// Agregar tallas completas si existen
+	if customer.ShirtSize != nil {
+		dto.ShirtSize = ToSizeDTO(customer.ShirtSize)
+	}
+	if customer.PantsSize != nil {
+		dto.PantsSize = ToSizeDTO(customer.PantsSize)
+	}
+	if customer.ShoesSize != nil {
+		dto.ShoesSize = ToSizeDTO(customer.ShoesSize)
+	}
+
+	return dto
 }
 
 // ToCustomerDTOList convierte una lista de entidades Customer a DTOs

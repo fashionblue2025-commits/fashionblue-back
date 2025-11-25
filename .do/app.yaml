@@ -1,0 +1,96 @@
+name: fashion-blue-api
+region: nyc
+
+# Database
+databases:
+  - name: fashion-blue-db
+    engine: PG
+    version: "16"
+    production: true
+    cluster_name: fashion-blue-cluster
+
+# API Service
+services:
+  - name: api
+    github:
+      repo: TU_USUARIO/fashion-blue
+      branch: main
+      deploy_on_push: true
+    
+    dockerfile_path: Dockerfile
+    
+    instance_size_slug: basic-xxs
+    instance_count: 1
+    
+    http_port: 8080
+    
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 10
+      period_seconds: 10
+      timeout_seconds: 3
+      success_threshold: 1
+      failure_threshold: 3
+    
+    # Variables de entorno
+    envs:
+      - key: APP_NAME
+        value: fashion-blue
+      - key: APP_ENV
+        value: production
+      - key: APP_PORT
+        value: "8080"
+      - key: APP_HOST
+        value: 0.0.0.0
+      
+      # Database (automático desde DO managed database)
+      - key: DB_HOST
+        scope: RUN_TIME
+        value: ${fashion-blue-db.HOSTNAME}
+      - key: DB_PORT
+        scope: RUN_TIME
+        value: ${fashion-blue-db.PORT}
+      - key: DB_USER
+        scope: RUN_TIME
+        value: ${fashion-blue-db.USERNAME}
+      - key: DB_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+        value: ${fashion-blue-db.PASSWORD}
+      - key: DB_NAME
+        scope: RUN_TIME
+        value: ${fashion-blue-db.DATABASE}
+      - key: DB_SSLMODE
+        value: require
+      
+      # JWT (configurar como secreto en DO)
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: JWT_EXPIRATION
+        value: 24h
+      
+      # Cloudinary (opcional)
+      - key: CLOUDINARY_ENABLED
+        value: "true"
+      - key: CLOUDINARY_CLOUD_NAME
+        scope: RUN_TIME
+        type: SECRET
+      - key: CLOUDINARY_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: CLOUDINARY_API_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: CLOUDINARY_FOLDER
+        value: fashion-blue/production
+      
+      # CORS
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://tudominio.com,https://www.tudominio.com
+      
+      # Logs
+      - key: LOG_LEVEL
+        value: info
+      - key: LOG_FORMAT
+        value: json

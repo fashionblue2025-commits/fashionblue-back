@@ -62,14 +62,6 @@ type SupplierService interface {
 	DeleteSupplier(ctx context.Context, id uint) error
 }
 
-// CapitalInjectionService define las operaciones de negocio para inyecciones de capital
-type CapitalInjectionService interface {
-	CreateInjection(ctx context.Context, injection *entities.CapitalInjection) error
-	GetInjection(ctx context.Context, id uint) (*entities.CapitalInjection, error)
-	ListInjections(ctx context.Context, filters map[string]interface{}) ([]entities.CapitalInjection, error)
-	GetTotalCapital(ctx context.Context) (float64, error)
-}
-
 // FileService define las operaciones para manejo de archivos
 type FileService interface {
 	SaveFile(ctx context.Context, file []byte, filename string) (string, error)

@@ -9,33 +9,45 @@ import (
 	"os/signal"
 	"time"
 
+	analyticsHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/analytics"
+	auditHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/audit"
 	authHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/auth"
-	capitalInjectionHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/capital_injection"
 	categoryHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/category"
 	customerHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/customer"
+	financialTransactionHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/financial_transaction"
+	orderHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/order"
 	paymentMethodHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/payment_method"
 	productHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/product"
 	sizeHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/size"
 	supplierHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/supplier"
+	swaggerHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/swagger"
 	userHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/user"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/routes"
-	capitalInjectionRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/capital_injection"
+	auditRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/audit"
 	categoryRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/category"
 	customerRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/customer"
+	financialTransactionRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/financial_transaction"
+	orderRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/order"
 	paymentMethodRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/payment_method"
 	productRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/product"
 	sizeRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/size"
 	supplierRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/supplier"
 	userRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/user"
+	"github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/storage"
+	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/event_handlers"
+	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/auth"
-	capitalInjectionUseCases "github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/capital_injection"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/category"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/customer"
+	financialTransactionUseCases "github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/financial_transaction"
+	orderUseCases "github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/order"
 	paymentMethodUseCases "github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/payment_method"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/product"
 	sizeUseCases "github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/size"
 	supplierUseCases "github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/supplier"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/user"
+	"github.com/bryanarroyaveortiz/fashion-blue/internal/domain/events"
+	"github.com/bryanarroyaveortiz/fashion-blue/internal/domain/ports"
 	"github.com/bryanarroyaveortiz/fashion-blue/pkg/config"
 	"github.com/bryanarroyaveortiz/fashion-blue/pkg/database"
 	"github.com/labstack/echo/v4"
@@ -64,17 +76,84 @@ func main() {
 	userRepository := userRepo.NewUserRepository(db)
 	categoryRepository := categoryRepo.NewCategoryRepository(db)
 	productRepository := productRepo.NewProductRepository(db)
+	productVariantRepository := productRepo.NewProductVariantRepository(db)
+	productPhotoRepository := productRepo.NewProductPhotoRepository(db)
 	sizeRepository := sizeRepo.NewSizeRepository(db)
 	paymentMethodRepository := paymentMethodRepo.NewPaymentMethodRepository(db)
 	customerRepository := customerRepo.NewCustomerRepository(db)
 	customerTransactionRepository := customerRepo.NewCustomerTransactionRepository(db)
+	auditLogRepository := auditRepo.NewAuditLogRepository(db)
 	supplierRepository := supplierRepo.NewSupplierRepository(db)
-	capitalInjectionRepository := capitalInjectionRepo.NewCapitalInjectionRepository(db)
+	financialTransactionRepository := financialTransactionRepo.NewFinancialTransactionRepository(db)
+	orderRepository := orderRepo.NewOrderRepository(db)
+	orderItemRepository := orderRepo.NewOrderItemRepository(db)
+
+	// Inicializar almacenamiento de archivos
+	var fileStorage ports.FileStorage
+	if cfg.Cloudinary.Enabled {
+		// Usar Cloudinary si está habilitado
+		cloudStorage, err := storage.NewCloudinaryStorage(
+			cfg.Cloudinary.CloudName,
+			cfg.Cloudinary.APIKey,
+			cfg.Cloudinary.APISecret,
+			cfg.Cloudinary.Folder,
+		)
+		if err != nil {
+			log.Printf("Warning: Failed to initialize Cloudinary, falling back to local storage: %v", err)
+			fileStorage = storage.NewLocalFileStorage(cfg.Upload.Path, fmt.Sprintf("http://%s:%s", cfg.App.Host, cfg.App.Port))
+		} else {
+			fileStorage = cloudStorage
+			log.Println("Using Cloudinary for file storage")
+		}
+	} else {
+		// Usar almacenamiento local por defecto
+		fileStorage = storage.NewLocalFileStorage(cfg.Upload.Path, fmt.Sprintf("http://%s:%s", cfg.App.Host, cfg.App.Port))
+		log.Println("Using local file storage")
+	}
 
 	// Inicializar casos de uso - Auth
 	loginUC := auth.NewLoginUseCase(userRepository, cfg.JWT.Secret, cfg.JWT.GetExpiration())
 	registerUC := auth.NewRegisterUseCase(userRepository, cfg.JWT.Secret, cfg.JWT.GetExpiration())
 	validateTokenUC := auth.NewValidateTokenUseCase(userRepository, cfg.JWT.Secret)
+
+	// Inicializar Event Bus
+	eventBus := events.NewEventBus()
+
+	// Inicializar Event Handlers
+	loggingHandler := event_handlers.NewLoggingHandler(eventBus)
+	loggingHandler.Start()
+
+	notificationHandler := event_handlers.NewNotificationHandler(eventBus)
+	notificationHandler.Start()
+
+	analyticsEventHandler := event_handlers.NewAnalyticsHandler(eventBus)
+	analyticsEventHandler.Start()
+
+	auditEventHandler := event_handlers.NewAuditHandler(eventBus, auditLogRepository)
+	auditEventHandler.Start()
+
+	// Product creation handler para órdenes INVENTORY
+	productCreationHandler := event_handlers.NewProductCreationHandler(eventBus, productRepository, productVariantRepository, orderItemRepository)
+	productCreationHandler.Start()
+
+	// Internal customer transaction handler para registro contable
+	internalCustomerTransactionHandler := event_handlers.NewInternalCustomerTransactionHandler(eventBus, customerTransactionRepository)
+	internalCustomerTransactionHandler.Start()
+
+	// Financial income handler para registrar ingresos automáticos por ventas
+	financialIncomeHandler := event_handlers.NewFinancialIncomeHandler(eventBus, financialTransactionRepository)
+	financialIncomeHandler.Start()
+
+	// Webhook handler (opcional - configurar según necesidad)
+	webhookConfig := event_handlers.WebhookConfig{
+		URL:     "", // Configurar URL si se necesita
+		Enabled: false,
+		Secret:  "",
+	}
+	webhookHandler := event_handlers.NewWebhookHandler(eventBus, webhookConfig)
+	webhookHandler.Start()
+
+	log.Println("✅ Event handlers initialized and started")
 
 	// Inicializar casos de uso - User
 	createUserUC := user.NewCreateUserUseCase(userRepository)
@@ -85,12 +164,17 @@ func main() {
 	changePasswordUC := user.NewChangePasswordUseCase(userRepository)
 
 	// Inicializar casos de uso - Product
-	createProductUC := product.NewCreateProductUseCase(productRepository)
+	createProductUC := product.NewCreateProductUseCase(productRepository, productVariantRepository)
 	getProductUC := product.NewGetProductUseCase(productRepository)
 	listProductsUC := product.NewListProductsUseCase(productRepository)
 	updateProductUC := product.NewUpdateProductUseCase(productRepository)
 	deleteProductUC := product.NewDeleteProductUseCase(productRepository)
 	getLowStockUC := product.NewGetLowStockProductsUseCase(productRepository)
+	uploadProductPhotoUC := product.NewUploadProductPhotoUseCase(productPhotoRepository, fileStorage)
+	uploadMultiplePhotosUC := product.NewUploadMultiplePhotosUseCase(productPhotoRepository, fileStorage)
+	getProductPhotosUC := product.NewGetProductPhotosUseCase(productPhotoRepository)
+	deleteProductPhotoUC := product.NewDeleteProductPhotoUseCase(productPhotoRepository, fileStorage)
+	setPrimaryPhotoUC := product.NewSetPrimaryPhotoUseCase(productPhotoRepository)
 
 	// Inicializar casos de uso - Category
 	createCategoryUC := category.NewCreateCategoryUseCase(categoryRepository)
@@ -118,6 +202,7 @@ func main() {
 	getUpcomingPaymentsUC := customer.NewGetUpcomingPaymentsUseCase(customerRepository)
 	getCustomerBalanceUC := customer.NewGetCustomerBalanceUseCase(customerRepository)
 	addTransactionUC := customer.NewAddTransactionUseCase(customerTransactionRepository, customerRepository)
+	generateCustomerStatementUC := usecases.NewGenerateCustomerStatementUseCase(customerRepository, customerTransactionRepository)
 
 	// Inicializar casos de uso - Supplier
 	createSupplierUC := supplierUseCases.NewCreateSupplierUseCase(supplierRepository)
@@ -126,22 +211,37 @@ func main() {
 	updateSupplierUC := supplierUseCases.NewUpdateSupplierUseCase(supplierRepository)
 	deleteSupplierUC := supplierUseCases.NewDeleteSupplierUseCase(supplierRepository)
 
-	// Inicializar casos de uso - CapitalInjection
-	createInjectionUC := capitalInjectionUseCases.NewCreateInjectionUseCase(capitalInjectionRepository)
-	getInjectionUC := capitalInjectionUseCases.NewGetInjectionUseCase(capitalInjectionRepository)
-	listInjectionsUC := capitalInjectionUseCases.NewListInjectionsUseCase(capitalInjectionRepository)
-	getTotalCapitalUC := capitalInjectionUseCases.NewGetTotalCapitalUseCase(capitalInjectionRepository)
+	// Inicializar casos de uso - FinancialTransaction
+	createTransactionUC := financialTransactionUseCases.NewCreateTransactionUseCase(financialTransactionRepository)
+	getTransactionUC := financialTransactionUseCases.NewGetTransactionUseCase(financialTransactionRepository)
+	listTransactionsUC := financialTransactionUseCases.NewListTransactionsUseCase(financialTransactionRepository)
+	getBalanceUC := financialTransactionUseCases.NewGetBalanceUseCase(financialTransactionRepository)
+
+	// Inicializar casos de uso - Order
+	createOrderUC := orderUseCases.NewCreateOrderUseCase(orderRepository, productRepository, productVariantRepository, eventBus)
+	getOrderUC := orderUseCases.NewGetOrderUseCase(orderRepository)
+	listOrdersUC := orderUseCases.NewListOrdersUseCase(orderRepository)
+	updateOrderStatusUC := orderUseCases.NewUpdateOrderStatusUseCase(orderRepository)
+	addOrderItemUC := orderUseCases.NewAddOrderItemUseCase(orderRepository, orderItemRepository, productRepository, productVariantRepository)
+	updateOrderItemUC := orderUseCases.NewUpdateOrderItemUseCase(orderRepository, orderItemRepository)
+	removeOrderItemUC := orderUseCases.NewRemoveOrderItemUseCase(orderRepository, orderItemRepository)
+	changeOrderStatusUC := orderUseCases.NewChangeOrderStatusUseCase(orderRepository, orderItemRepository, productRepository, productVariantRepository, eventBus)
 
 	// Inicializar handlers
 	authHandlerInstance := authHandler.NewAuthHandler(loginUC, registerUC)
 	userHandlerInstance := userHandler.NewUserHandler(createUserUC, getUserUC, listUsersUC, updateUserUC, deleteUserUC, changePasswordUC)
-	productHandlerInstance := productHandler.NewProductHandler(createProductUC, getProductUC, listProductsUC, updateProductUC, deleteProductUC, getLowStockUC)
+	productHandlerInstance := productHandler.NewProductHandler(createProductUC, getProductUC, listProductsUC, updateProductUC, deleteProductUC, getLowStockUC, uploadProductPhotoUC, uploadMultiplePhotosUC, getProductPhotosUC, deleteProductPhotoUC, setPrimaryPhotoUC)
 	categoryHandlerInstance := categoryHandler.NewCategoryHandler(createCategoryUC, getCategoryUC, listCategoriesUC, updateCategoryUC, deleteCategoryUC)
 	sizeHandlerInstance := sizeHandler.NewSizeHandler(listSizesUC, getSizeUC, getSizesByTypeUC)
 	paymentMethodHandlerInstance := paymentMethodHandler.NewPaymentMethodHandler(listPaymentMethodsUC)
 	customerHandlerInstance := customerHandler.NewCustomerHandler(createCustomerUC, getCustomerUC, listCustomersUC, updateCustomerUC, deleteCustomerUC, getCustomerHistoryUC, createPaymentUC, getUpcomingPaymentsUC, getCustomerBalanceUC, addTransactionUC)
+	statementHandlerInstance := customerHandler.NewStatementHandler(generateCustomerStatementUC)
+	orderHandlerInstance := orderHandler.NewOrderHandler(createOrderUC, getOrderUC, listOrdersUC, updateOrderStatusUC, addOrderItemUC, updateOrderItemUC, removeOrderItemUC, changeOrderStatusUC)
 	supplierHandlerInstance := supplierHandler.NewSupplierHandler(createSupplierUC, getSupplierUC, listSuppliersUC, updateSupplierUC, deleteSupplierUC)
-	capitalInjectionHandlerInstance := capitalInjectionHandler.NewCapitalInjectionHandler(createInjectionUC, getInjectionUC, listInjectionsUC, getTotalCapitalUC)
+	financialTransactionHandlerInstance := financialTransactionHandler.NewFinancialTransactionHandler(createTransactionUC, getTransactionUC, listTransactionsUC, getBalanceUC)
+	analyticsHTTPHandlerInstance := analyticsHandler.NewAnalyticsHTTPHandler(analyticsEventHandler)
+	auditHTTPHandlerInstance := auditHandler.NewAuditHTTPHandler(auditLogRepository)
+	swaggerHandlerInstance := swaggerHandler.NewSwaggerHandler("docs/swagger.json")
 
 	// Crear instancia de Echo
 	e := echo.New()
@@ -151,6 +251,9 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 	e.Use(middleware.RequestID())
+
+	// Servir archivos estáticos (uploads)
+	e.Static("/uploads", "./uploads")
 
 	// Health check
 	e.GET("/health", func(c echo.Context) error {
@@ -162,15 +265,20 @@ func main() {
 
 	// Configurar rutas
 	routes.SetupRoutes(e, routes.Handlers{
-		Auth:             authHandlerInstance,
-		User:             userHandlerInstance,
-		Product:          productHandlerInstance,
-		Category:         categoryHandlerInstance,
-		Size:             sizeHandlerInstance,
-		PaymentMethod:    paymentMethodHandlerInstance,
-		Customer:         customerHandlerInstance,
-		Supplier:         supplierHandlerInstance,
-		CapitalInjection: capitalInjectionHandlerInstance,
+		Analytics:            analyticsHTTPHandlerInstance,
+		Audit:                auditHTTPHandlerInstance,
+		Auth:                 authHandlerInstance,
+		User:                 userHandlerInstance,
+		Product:              productHandlerInstance,
+		Category:             categoryHandlerInstance,
+		Size:                 sizeHandlerInstance,
+		PaymentMethod:        paymentMethodHandlerInstance,
+		Customer:             customerHandlerInstance,
+		CustomerStatement:    statementHandlerInstance,
+		Order:                orderHandlerInstance,
+		Supplier:             supplierHandlerInstance,
+		FinancialTransaction: financialTransactionHandlerInstance,
+		Swagger:              swaggerHandlerInstance,
 	}, validateTokenUC)
 
 	// Iniciar servidor
@@ -190,6 +298,19 @@ func main() {
 	<-quit
 
 	log.Println("Shutting down server...")
+
+	// Detener event handlers
+	log.Println("Stopping event handlers...")
+	loggingHandler.Stop()
+	notificationHandler.Stop()
+	analyticsEventHandler.Stop()
+	auditEventHandler.Stop()
+	productCreationHandler.Stop()
+	webhookHandler.Stop()
+
+	// Cerrar event bus
+	eventBus.Close()
+	log.Println("Event handlers stopped")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
