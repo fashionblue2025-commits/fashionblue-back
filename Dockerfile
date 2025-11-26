@@ -30,9 +30,6 @@ WORKDIR /root/
 # Copy binary from builder
 COPY --from=builder /app/main .
 
-# Copy migrations
-COPY --from=builder /app/migrations ./migrations
-
 # Create uploads directory
 RUN mkdir -p /app/uploads
 
