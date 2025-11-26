@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func main() {
+func main2() {
 	// Cargar configuración
 	cfg, err := config.Load()
 	if err != nil {

@@ -40,6 +40,15 @@ type Handlers struct {
 
 // SetupRoutes configura todas las rutas de la aplicación
 func SetupRoutes(e *echo.Echo, handlers Handlers, validateTokenUC *auth.ValidateTokenUseCase) {
+	// Health check endpoint (para Railway, Docker, K8s, etc.)
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(200, map[string]interface{}{
+			"status":  "ok",
+			"service": "fashion-blue-api",
+			"version": "1.0.0",
+		})
+	})
+
 	// API v1
 	api := e.Group("/api/v1")
 
