@@ -36,6 +36,7 @@ type DatabaseConfig struct {
 	Password string
 	Name     string
 	SSLMode  string
+	DSN      string
 }
 
 // JWTConfig configuración de JWT
@@ -100,6 +101,7 @@ func Load() (*Config, error) {
 			Password: getEnv("DB_PASSWORD", "fashionblue123"),
 			Name:     getEnv("DB_NAME", "fashionblue_db"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+			DSN:      getEnv("DB_DSN", ""),
 		},
 		JWT: JWTConfig{
 			Secret:     getEnv("JWT_SECRET", "your-super-secret-jwt-key"),
@@ -130,6 +132,11 @@ func Load() (*Config, error) {
 
 // GetDSN retorna el DSN de conexión a la base de datos
 func (c *Config) GetDSN() string {
+
+	if c.Database.DSN != "" {
+		return c.Database.DSN
+	}
+
 	return fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		c.Database.Host,
