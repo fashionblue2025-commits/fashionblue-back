@@ -60,10 +60,11 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.PaymentMethodModel{}, // Tabla de métodos de pago
 		&models.CustomerModel{},
 		&models.CustomerTransactionModel{},
-		&models.SupplierModel{},   // Tabla de proveedores
-		&models.OrderModel{},      // Tabla de órdenes
-		&models.OrderItemModel{},  // Tabla de items de órdenes
-		&models.OrderPhotoModel{}, // Tabla de fotos de órdenes
+		&models.SupplierModel{},               // Tabla de proveedores
+		&models.OrderModel{},                  // Tabla de órdenes
+		&models.OrderItemModel{},              // Tabla de items de órdenes
+		&models.OrderPhotoModel{},             // Tabla de fotos de órdenes
+		&models.UserCategoryPermissionModel{}, // Tabla de permisos de usuario por categoría
 	)
 }
 

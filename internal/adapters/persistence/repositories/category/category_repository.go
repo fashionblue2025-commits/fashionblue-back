@@ -55,6 +55,11 @@ func (r *categoryRepository) List(ctx context.Context, filters map[string]interf
 		query = query.Where("is_active = ?", isActive)
 	}
 
+	// Filtro por IDs específicos (para permisos de usuario)
+	if ids, ok := filters["ids"].([]uint); ok && len(ids) > 0 {
+		query = query.Where("id IN ?", ids)
+	}
+
 	if err := query.Find(&modelList).Error; err != nil {
 		return nil, err
 	}

@@ -22,6 +22,7 @@ import (
 	supplierHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/supplier"
 	swaggerHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/swagger"
 	userHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/user"
+	userPermissionHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/user_permission"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/routes"
 	auditRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/audit"
 	categoryRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/category"
@@ -33,6 +34,7 @@ import (
 	sizeRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/size"
 	supplierRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/supplier"
 	userRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/user"
+	userCategoryPermissionRepo "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/persistence/repositories/user_category_permission"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/storage"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/event_handlers"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases"
@@ -46,6 +48,7 @@ import (
 	sizeUseCases "github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/size"
 	supplierUseCases "github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/supplier"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/user"
+	userPermissionUseCases "github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/user_permission"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/domain/events"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/domain/ports"
 	"github.com/bryanarroyaveortiz/fashion-blue/pkg/config"
@@ -87,6 +90,7 @@ func main() {
 	financialTransactionRepository := financialTransactionRepo.NewFinancialTransactionRepository(db)
 	orderRepository := orderRepo.NewOrderRepository(db)
 	orderItemRepository := orderRepo.NewOrderItemRepository(db)
+	userCategoryPermissionRepository := userCategoryPermissionRepo.NewUserCategoryPermissionRepository(db)
 
 	// Inicializar almacenamiento de archivos
 	var fileStorage ports.FileStorage
@@ -163,6 +167,11 @@ func main() {
 	deleteUserUC := user.NewDeleteUserUseCase(userRepository)
 	changePasswordUC := user.NewChangePasswordUseCase(userRepository)
 
+	// Inicializar casos de uso - User Permissions
+	checkCategoryPermissionUC := userPermissionUseCases.NewCheckCategoryPermissionUseCase(userCategoryPermissionRepository, userRepository)
+	getAllowedCategoriesUC := userPermissionUseCases.NewGetUserAllowedCategoriesUseCase(userCategoryPermissionRepository, categoryRepository, userRepository)
+	manageUserPermissionsUC := userPermissionUseCases.NewManageUserPermissionsUseCase(userCategoryPermissionRepository, categoryRepository, userRepository)
+
 	// Inicializar casos de uso - Product
 	createProductUC := product.NewCreateProductUseCase(productRepository, productVariantRepository)
 	getProductUC := product.NewGetProductUseCase(productRepository)
@@ -230,6 +239,7 @@ func main() {
 	// Inicializar handlers
 	authHandlerInstance := authHandler.NewAuthHandler(loginUC, registerUC)
 	userHandlerInstance := userHandler.NewUserHandler(createUserUC, getUserUC, listUsersUC, updateUserUC, deleteUserUC, changePasswordUC)
+	userPermissionHandlerInstance := userPermissionHandler.NewUserPermissionHandler(manageUserPermissionsUC, checkCategoryPermissionUC, getAllowedCategoriesUC)
 	productHandlerInstance := productHandler.NewProductHandler(createProductUC, getProductUC, listProductsUC, updateProductUC, deleteProductUC, getLowStockUC, uploadProductPhotoUC, uploadMultiplePhotosUC, getProductPhotosUC, deleteProductPhotoUC, setPrimaryPhotoUC)
 	categoryHandlerInstance := categoryHandler.NewCategoryHandler(createCategoryUC, getCategoryUC, listCategoriesUC, updateCategoryUC, deleteCategoryUC)
 	sizeHandlerInstance := sizeHandler.NewSizeHandler(listSizesUC, getSizeUC, getSizesByTypeUC)
@@ -269,6 +279,7 @@ func main() {
 		Audit:                auditHTTPHandlerInstance,
 		Auth:                 authHandlerInstance,
 		User:                 userHandlerInstance,
+		UserPermission:       userPermissionHandlerInstance,
 		Product:              productHandlerInstance,
 		Category:             categoryHandlerInstance,
 		Size:                 sizeHandlerInstance,

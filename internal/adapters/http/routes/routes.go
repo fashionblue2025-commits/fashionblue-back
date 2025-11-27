@@ -14,6 +14,7 @@ import (
 	supplierHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/supplier"
 	swaggerHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/swagger"
 	userHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/user"
+	userPermissionHandler "github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/handlers/user_permission"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/adapters/http/middleware"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/application/usecases/auth"
 	"github.com/bryanarroyaveortiz/fashion-blue/internal/domain/entities"
@@ -36,6 +37,7 @@ type Handlers struct {
 	Supplier             *supplierHandler.SupplierHandler
 	FinancialTransaction *financialTransactionHandler.FinancialTransactionHandler
 	Swagger              *swaggerHandler.SwaggerHandler
+	UserPermission       *userPermissionHandler.UserPermissionHandler
 }
 
 // SetupRoutes configura todas las rutas de la aplicación
@@ -180,6 +182,26 @@ func SetupRoutes(e *echo.Echo, handlers Handlers, validateTokenUC *auth.Validate
 		audit.GET("/logs/:orderId", handlers.Audit.GetAuditLogsByOrder) // Busca por Order ID
 		audit.GET("/users/:userId/logs", handlers.Audit.GetAuditLogsByUser)
 		audit.GET("/stats", handlers.Audit.GetAuditStats)
+	}
+
+	// Rutas protegidas - User Permissions (solo autenticados)
+	permissions := api.Group("/permissions")
+	permissions.Use(middleware.AuthMiddleware(validateTokenUC))
+	{
+		// Cualquier usuario puede consultar sus propios permisos
+		permissions.GET("/users/:id/allowed-categories", handlers.UserPermission.GetAllowedCategories)
+		permissions.GET("/users/:id/check/:categoryId", handlers.UserPermission.CheckPermission)
+
+		// Solo admin puede gestionar permisos
+		adminPermissions := permissions.Group("")
+		adminPermissions.Use(middleware.RequireRole(entities.RoleSuperAdmin))
+		{
+			adminPermissions.GET("/users/:id", handlers.UserPermission.GetUserPermissions)
+			adminPermissions.POST("/users/:id", handlers.UserPermission.SetUserPermissions)
+			adminPermissions.POST("/users/:id/categories/:categoryId", handlers.UserPermission.AddCategoryPermission)
+			adminPermissions.DELETE("/users/:id/categories/:categoryId", handlers.UserPermission.RemoveCategoryPermission)
+			adminPermissions.GET("/categories/:id/users", handlers.UserPermission.GetCategoryPermissions)
+		}
 	}
 
 	// Rutas públicas - Documentación API (Swagger)
