@@ -1,14 +1,30 @@
-# Docker Compose para Producción
-# Uso: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+# Docker Compose para Producción en VPS
+# Uso: docker-compose -f docker-compose.prod.yml up -d
+# Este archivo usa imágenes pre-construidas desde GitHub Container Registry
 
 version: '3.8'
 
 services:
   postgres:
+    image: postgres:16-alpine
+    container_name: fashionblue-postgres-prod
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      # Configuraciones adicionales de seguridad
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
     # En producción, no exponemos el puerto directamente
-    # Solo accesible desde la red interna
+    # Solo accesible desde la red interna Docker
     ports: []
-    # Configuraciones de producción
+    volumes:
+      # CRÍTICO: Volumen nombrado para persistencia permanente
+      - postgres_data_prod:/var/lib/postgresql/data
+      # Backup automático
+      - ./backups/postgres:/backups
+    networks:
+      - fashionblue-network-prod
+    # Configuraciones optimizadas de PostgreSQL para producción
     command: 
       - postgres
       - -c
@@ -35,7 +51,18 @@ services:
       - min_wal_size=1GB
       - -c
       - max_wal_size=4GB
-    # Recursos limitados
+      - -c
+      - log_statement=all
+      - -c
+      - log_duration=on
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: always
+    # Límites de recursos
     deploy:
       resources:
         limits:
@@ -46,16 +73,48 @@ services:
           memory: 1G
 
   api:
-    # Build optimizado para producción
-    build:
-      target: production
+    # Usar imagen pre-construida desde GitHub Container Registry
+    image: ghcr.io/${GITHUB_REPOSITORY:-bryanarroyaveortiz/fashion-blue}:latest
+    container_name: fashionblue-api-prod
     environment:
+      APP_NAME: ${APP_NAME}
       APP_ENV: production
+      APP_PORT: ${APP_PORT:-8080}
+      APP_HOST: ${APP_HOST:-0.0.0.0}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-24h}
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-10485760}
+      UPLOAD_PATH: /app/uploads
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       LOG_LEVEL: info
       LOG_FORMAT: json
-    # Reiniciar siempre en producción
+    ports:
+      # Solo exponemos en localhost, Nginx hace el proxy
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - fashionblue-network-prod
+    volumes:
+      # CRÍTICO: Persistencia de archivos subidos
+      - uploads_data_prod:/app/uploads
+      # Logs de la aplicación
+      - ./logs:/app/logs
     restart: always
-    # Recursos limitados
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Límites de recursos
     deploy:
       resources:
         limits:
@@ -64,18 +123,25 @@ services:
         reservations:
           cpus: '0.5'
           memory: 256M
-      # Múltiples réplicas para alta disponibilidad
-      replicas: 2
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
 
-  # pgAdmin no se incluye en producción por seguridad
+  # pgAdmin NO se incluye en producción por seguridad
+  # Solo usar en desarrollo local
   pgadmin:
     profiles:
       - donotstart
+
+# CRÍTICO: Volúmenes nombrados para persistencia
+# Estos volúmenes NO se eliminan cuando se hace docker-compose down
+# Los datos persisten entre deployments
+volumes:
+  postgres_data_prod:
+    driver: local
+    name: fashionblue_postgres_data_prod
+  uploads_data_prod:
+    driver: local
+    name: fashionblue_uploads_data_prod
+
+networks:
+  fashionblue-network-prod:
+    driver: bridge
+    name: fashionblue-network-prod
