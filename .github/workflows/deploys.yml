@@ -135,7 +135,7 @@ jobs:
             
             # Pull latest Docker images
             echo "🐳 Pulling latest Docker images..."
-            docker-compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml pull
             
             # Backup database before deployment
             echo "💾 Creating database backup..."
@@ -143,18 +143,18 @@ jobs:
             
             # Deploy with zero-downtime
             echo "🔄 Deploying new version..."
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
             
             # Wait for health check
             echo "🏥 Waiting for health check..."
             sleep 10
             
             # Check if API is running
-            if docker-compose -f docker-compose.prod.yml ps | grep -q "fashionblue-api.*Up"; then
+            if docker compose -f docker-compose.prod.yml ps | grep -q "fashionblue-api.*Up"; then
               echo "✅ API is running"
             else
               echo "❌ API failed to start"
-              docker-compose -f docker-compose.prod.yml logs --tail=50 api
+              docker compose -f docker-compose.prod.yml logs --tail=50 api
               exit 1
             fi
             
@@ -174,7 +174,7 @@ jobs:
           script: |
             cd ${{ env.DEPLOY_PATH }}
             echo "📊 Container status:"
-            docker-compose -f docker-compose.prod.yml ps
+            docker compose -f docker-compose.prod.yml ps
             
             echo ""
             echo "💾 Disk usage:"
@@ -182,7 +182,7 @@ jobs:
             
             echo ""
             echo "📝 Recent logs:"
-            docker-compose -f docker-compose.prod.yml logs --tail=20 api
+            docker compose -f docker-compose.prod.yml logs --tail=20 api
 
   notify:
     name: Notify Deployment Status
