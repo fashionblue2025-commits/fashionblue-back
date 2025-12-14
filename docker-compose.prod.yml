@@ -94,9 +94,9 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       LOG_LEVEL: info
       LOG_FORMAT: json
-    ports:
-      # Solo exponemos en localhost, Nginx hace el proxy
-      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    # No exponemos puertos, solo accesible desde nginx
+    expose:
+      - "8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -124,6 +124,40 @@ services:
           cpus: '0.5'
           memory: 256M
 
+  # Nginx Reverse Proxy con HTTPS
+  nginx:
+    image: nginx:alpine
+    container_name: fashionblue-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    networks:
+      - fashionblue-network-prod
+    depends_on:
+      - api
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Certbot para SSL/HTTPS automático
+  certbot:
+    image: certbot/certbot:latest
+    container_name: fashionblue-certbot-prod
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - fashionblue-network-prod
+
   # pgAdmin NO se incluye en producción por seguridad
   # Solo usar en desarrollo local
   pgadmin:
@@ -140,6 +174,12 @@ volumes:
   uploads_data_prod:
     driver: local
     name: fashionblue_uploads_data_prod
+  certbot_conf:
+    driver: local
+    name: fashionblue_certbot_conf
+  certbot_www:
+    driver: local
+    name: fashionblue_certbot_www
 
 networks:
   fashionblue-network-prod:
