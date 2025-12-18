@@ -12,22 +12,28 @@ import (
 
 type FinancialTransactionHandler struct {
 	createTransactionUC *financial_transaction.CreateTransactionUseCase
+	updateTransactionUC *financial_transaction.UpdateTransactionUseCase
 	getTransactionUC    *financial_transaction.GetTransactionUseCase
 	listTransactionsUC  *financial_transaction.ListTransactionsUseCase
 	getBalanceUC        *financial_transaction.GetBalanceUseCase
+	generatePDFUC       *financial_transaction.GeneratePDFUseCase
 }
 
 func NewFinancialTransactionHandler(
 	createTransactionUC *financial_transaction.CreateTransactionUseCase,
+	updateTransactionUC *financial_transaction.UpdateTransactionUseCase,
 	getTransactionUC *financial_transaction.GetTransactionUseCase,
 	listTransactionsUC *financial_transaction.ListTransactionsUseCase,
 	getBalanceUC *financial_transaction.GetBalanceUseCase,
+	generatePDFUC *financial_transaction.GeneratePDFUseCase,
 ) *FinancialTransactionHandler {
 	return &FinancialTransactionHandler{
 		createTransactionUC: createTransactionUC,
+		updateTransactionUC: updateTransactionUC,
 		getTransactionUC:    getTransactionUC,
 		listTransactionsUC:  listTransactionsUC,
 		getBalanceUC:        getBalanceUC,
+		generatePDFUC:       generatePDFUC,
 	}
 }
 
@@ -83,6 +89,26 @@ func (h *FinancialTransactionHandler) List(c echo.Context) error {
 	return response.OK(c, "Transactions retrieved successfully", dto.ToFinancialTransactionDTOList(transactions))
 }
 
+func (h *FinancialTransactionHandler) Update(c echo.Context) error {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return response.BadRequest(c, "Invalid transaction ID", err)
+	}
+
+	var transaction entities.FinancialTransaction
+	if err := c.Bind(&transaction); err != nil {
+		return response.BadRequest(c, "Invalid request body", err)
+	}
+
+	transaction.ID = uint(id)
+
+	if err := h.updateTransactionUC.Execute(c.Request().Context(), &transaction); err != nil {
+		return response.BadRequest(c, "Failed to update transaction", err)
+	}
+
+	return response.OK(c, "Transaction updated successfully", dto.ToFinancialTransactionDTO(&transaction))
+}
+
 func (h *FinancialTransactionHandler) GetBalance(c echo.Context) error {
 	balance, err := h.getBalanceUC.Execute(c.Request().Context())
 	if err != nil {
@@ -90,4 +116,33 @@ func (h *FinancialTransactionHandler) GetBalance(c echo.Context) error {
 	}
 
 	return response.OK(c, "Balance retrieved successfully", balance)
+}
+
+func (h *FinancialTransactionHandler) GeneratePDF(c echo.Context) error {
+	filters := make(map[string]interface{})
+
+	// Mismos filtros que List
+	if transactionType := c.QueryParam("type"); transactionType != "" {
+		filters["type"] = transactionType
+	}
+	if category := c.QueryParam("category"); category != "" {
+		filters["category"] = category
+	}
+	if startDate := c.QueryParam("start_date"); startDate != "" {
+		filters["start_date"] = startDate
+	}
+	if endDate := c.QueryParam("end_date"); endDate != "" {
+		filters["end_date"] = endDate
+	}
+
+	pdfBytes, err := h.generatePDFUC.Execute(c.Request().Context(), filters)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to generate PDF", err)
+	}
+
+	// Configurar headers para descarga de PDF
+	c.Response().Header().Set("Content-Type", "application/pdf")
+	c.Response().Header().Set("Content-Disposition", "attachment; filename=transacciones.pdf")
+
+	return c.Blob(200, "application/pdf", pdfBytes)
 }

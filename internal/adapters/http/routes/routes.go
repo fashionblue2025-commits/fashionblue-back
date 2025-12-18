@@ -137,7 +137,9 @@ func SetupRoutes(e *echo.Echo, handlers Handlers, validateTokenUC *auth.Validate
 		financialTransactions.POST("", handlers.FinancialTransaction.Create)            // Crear ingreso o gasto
 		financialTransactions.GET("", handlers.FinancialTransaction.List)               // Listar con filtros
 		financialTransactions.GET("/balance", handlers.FinancialTransaction.GetBalance) // Obtener balance
+		financialTransactions.GET("/pdf", handlers.FinancialTransaction.GeneratePDF)    // Generar PDF con filtros
 		financialTransactions.GET("/:id", handlers.FinancialTransaction.GetByID)        // Obtener por ID
+		financialTransactions.PUT("/:id", handlers.FinancialTransaction.Update)         // Actualizar transacción
 	}
 
 	// Rutas protegidas - Órdenes
@@ -146,8 +148,10 @@ func SetupRoutes(e *echo.Echo, handlers Handlers, validateTokenUC *auth.Validate
 		orders.POST("", handlers.Order.CreateOrder)
 		orders.GET("", handlers.Order.ListOrders)
 		orders.GET("/:id", handlers.Order.GetOrder)
-		orders.GET("/:id/allowed-statuses", handlers.Order.GetAllowedNextStatuses) // Obtener estados permitidos
-		orders.POST("/:id/change-status", handlers.Order.ChangeOrderStatus)        // Cambiar estado
+		orders.GET("/:id/allowed-statuses", handlers.Order.GetAllowedNextStatuses)          // Obtener estados permitidos
+		orders.GET("/:id/account-statement/draft", handlers.Order.GetAccountStatementDraft) // Obtener borrador de cuenta de cobro
+		orders.POST("/:id/account-statement", handlers.Order.ConfirmAccountStatement)       // Confirmar y generar PDF de cuenta de cobro
+		orders.POST("/:id/change-status", handlers.Order.ChangeOrderStatus)                 // Cambiar estado
 		orders.POST("/:id/items", handlers.Order.AddOrderItem)
 		orders.PUT("/:id/items/:itemId", handlers.Order.UpdateOrderItem)
 		orders.DELETE("/:id/items/:itemId", handlers.Order.RemoveOrderItem)

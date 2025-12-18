@@ -9,6 +9,7 @@ import (
 // FinancialTransactionRepository define las operaciones para gestionar transacciones financieras
 type FinancialTransactionRepository interface {
 	Create(ctx context.Context, transaction *entities.FinancialTransaction) error
+	Update(ctx context.Context, transaction *entities.FinancialTransaction) error
 	GetByID(ctx context.Context, id uint) (*entities.FinancialTransaction, error)
 	List(ctx context.Context, filters map[string]interface{}) ([]entities.FinancialTransaction, error)
 

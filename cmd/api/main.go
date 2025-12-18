@@ -222,9 +222,11 @@ func main() {
 
 	// Inicializar casos de uso - FinancialTransaction
 	createTransactionUC := financialTransactionUseCases.NewCreateTransactionUseCase(financialTransactionRepository)
+	updateTransactionUC := financialTransactionUseCases.NewUpdateTransactionUseCase(financialTransactionRepository)
 	getTransactionUC := financialTransactionUseCases.NewGetTransactionUseCase(financialTransactionRepository)
 	listTransactionsUC := financialTransactionUseCases.NewListTransactionsUseCase(financialTransactionRepository)
 	getBalanceUC := financialTransactionUseCases.NewGetBalanceUseCase(financialTransactionRepository)
+	generatePDFUC := financialTransactionUseCases.NewGeneratePDFUseCase(financialTransactionRepository)
 
 	// Inicializar casos de uso - Order
 	createOrderUC := orderUseCases.NewCreateOrderUseCase(orderRepository, productRepository, productVariantRepository, eventBus)
@@ -235,6 +237,7 @@ func main() {
 	updateOrderItemUC := orderUseCases.NewUpdateOrderItemUseCase(orderRepository, orderItemRepository)
 	removeOrderItemUC := orderUseCases.NewRemoveOrderItemUseCase(orderRepository, orderItemRepository)
 	changeOrderStatusUC := orderUseCases.NewChangeOrderStatusUseCase(orderRepository, orderItemRepository, productRepository, productVariantRepository, eventBus)
+	generateAccountStatementUC := orderUseCases.NewGenerateAccountStatementUseCase(orderRepository)
 
 	// Inicializar handlers
 	authHandlerInstance := authHandler.NewAuthHandler(loginUC, registerUC)
@@ -246,9 +249,9 @@ func main() {
 	paymentMethodHandlerInstance := paymentMethodHandler.NewPaymentMethodHandler(listPaymentMethodsUC)
 	customerHandlerInstance := customerHandler.NewCustomerHandler(createCustomerUC, getCustomerUC, listCustomersUC, updateCustomerUC, deleteCustomerUC, getCustomerHistoryUC, createPaymentUC, getUpcomingPaymentsUC, getCustomerBalanceUC, addTransactionUC)
 	statementHandlerInstance := customerHandler.NewStatementHandler(generateCustomerStatementUC)
-	orderHandlerInstance := orderHandler.NewOrderHandler(createOrderUC, getOrderUC, listOrdersUC, updateOrderStatusUC, addOrderItemUC, updateOrderItemUC, removeOrderItemUC, changeOrderStatusUC)
+	orderHandlerInstance := orderHandler.NewOrderHandler(createOrderUC, getOrderUC, listOrdersUC, updateOrderStatusUC, addOrderItemUC, updateOrderItemUC, removeOrderItemUC, changeOrderStatusUC, generateAccountStatementUC)
 	supplierHandlerInstance := supplierHandler.NewSupplierHandler(createSupplierUC, getSupplierUC, listSuppliersUC, updateSupplierUC, deleteSupplierUC)
-	financialTransactionHandlerInstance := financialTransactionHandler.NewFinancialTransactionHandler(createTransactionUC, getTransactionUC, listTransactionsUC, getBalanceUC)
+	financialTransactionHandlerInstance := financialTransactionHandler.NewFinancialTransactionHandler(createTransactionUC, updateTransactionUC, getTransactionUC, listTransactionsUC, getBalanceUC, generatePDFUC)
 	analyticsHTTPHandlerInstance := analyticsHandler.NewAnalyticsHTTPHandler(analyticsEventHandler)
 	auditHTTPHandlerInstance := auditHandler.NewAuditHTTPHandler(auditLogRepository)
 	swaggerHandlerInstance := swaggerHandler.NewSwaggerHandler("docs/swagger.json")

@@ -32,6 +32,26 @@ func (r *financialTransactionRepository) Create(ctx context.Context, transaction
 	return nil
 }
 
+func (r *financialTransactionRepository) Update(ctx context.Context, transaction *entities.FinancialTransaction) error {
+	model := &models.FinancialTransactionModel{}
+	model.FromEntity(transaction)
+
+	if err := r.db.WithContext(ctx).Model(&models.FinancialTransactionModel{}).
+		Where("id = ?", transaction.ID).
+		Updates(map[string]interface{}{
+			"type":        model.Type,
+			"category":    model.Category,
+			"amount":      model.Amount,
+			"description": model.Description,
+			"date":        model.Date,
+		}).Error; err != nil {
+		return err
+	}
+
+	transaction.UpdatedAt = model.UpdatedAt
+	return nil
+}
+
 func (r *financialTransactionRepository) GetByID(ctx context.Context, id uint) (*entities.FinancialTransaction, error) {
 	var model models.FinancialTransactionModel
 	if err := r.db.WithContext(ctx).First(&model, id).Error; err != nil {

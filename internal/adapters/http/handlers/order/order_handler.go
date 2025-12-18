@@ -12,14 +12,15 @@ import (
 )
 
 type OrderHandler struct {
-	createOrderUC       *order.CreateOrderUseCase
-	getOrderUC          *order.GetOrderUseCase
-	listOrdersUC        *order.ListOrdersUseCase
-	updateOrderStatusUC *order.UpdateOrderStatusUseCase
-	addOrderItemUC      *order.AddOrderItemUseCase
-	updateOrderItemUC   *order.UpdateOrderItemUseCase
-	removeOrderItemUC   *order.RemoveOrderItemUseCase
-	changeOrderStatusUC *order.ChangeOrderStatusUseCase
+	createOrderUC              *order.CreateOrderUseCase
+	getOrderUC                 *order.GetOrderUseCase
+	listOrdersUC               *order.ListOrdersUseCase
+	updateOrderStatusUC        *order.UpdateOrderStatusUseCase
+	addOrderItemUC             *order.AddOrderItemUseCase
+	updateOrderItemUC          *order.UpdateOrderItemUseCase
+	removeOrderItemUC          *order.RemoveOrderItemUseCase
+	changeOrderStatusUC        *order.ChangeOrderStatusUseCase
+	generateAccountStatementUC *order.GenerateAccountStatementUseCase
 }
 
 func NewOrderHandler(
@@ -31,16 +32,18 @@ func NewOrderHandler(
 	updateOrderItemUC *order.UpdateOrderItemUseCase,
 	removeOrderItemUC *order.RemoveOrderItemUseCase,
 	changeOrderStatusUC *order.ChangeOrderStatusUseCase,
+	generateAccountStatementUC *order.GenerateAccountStatementUseCase,
 ) *OrderHandler {
 	return &OrderHandler{
-		createOrderUC:       createOrderUC,
-		getOrderUC:          getOrderUC,
-		listOrdersUC:        listOrdersUC,
-		updateOrderStatusUC: updateOrderStatusUC,
-		addOrderItemUC:      addOrderItemUC,
-		updateOrderItemUC:   updateOrderItemUC,
-		removeOrderItemUC:   removeOrderItemUC,
-		changeOrderStatusUC: changeOrderStatusUC,
+		createOrderUC:              createOrderUC,
+		getOrderUC:                 getOrderUC,
+		listOrdersUC:               listOrdersUC,
+		updateOrderStatusUC:        updateOrderStatusUC,
+		addOrderItemUC:             addOrderItemUC,
+		updateOrderItemUC:          updateOrderItemUC,
+		removeOrderItemUC:          removeOrderItemUC,
+		changeOrderStatusUC:        changeOrderStatusUC,
+		generateAccountStatementUC: generateAccountStatementUC,
 	}
 }
 
@@ -313,4 +316,79 @@ func (h *OrderHandler) GetAllowedNextStatuses(c echo.Context) error {
 	return response.OK(c, "Allowed statuses retrieved successfully", map[string]interface{}{
 		"allowedNextStatuses": allowedStatuses,
 	})
+}
+
+// GetAccountStatementDraft obtiene el borrador de la cuenta de cobro para que el usuario lo edite
+// @Response: AccountStatementDraftDTO
+func (h *OrderHandler) GetAccountStatementDraft(c echo.Context) error {
+	orderID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return response.BadRequest(c, "Invalid order ID", err)
+	}
+
+	data, err := h.generateAccountStatementUC.GetDraft(c.Request().Context(), uint(orderID))
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get account statement draft", err)
+	}
+
+	// Convertir a DTO
+	draftDTO := dto.AccountStatementDraftDTO{
+		OrderID:         data.OrderID,
+		OrderNumber:     data.OrderNumber,
+		StatementNumber: data.StatementNumber,
+		SellerName:      data.SellerName,
+		SellerID:        data.SellerID,
+		ClientName:      data.ClientName,
+		City:            data.City,
+		Date:            data.Date,
+		Concept:         data.Concept,
+		TotalAmount:     data.TotalAmount,
+		BankAccount:     data.BankAccount,
+	}
+
+	return response.OK(c, "Account statement draft retrieved successfully", draftDTO)
+}
+
+// ConfirmAccountStatement confirma los datos editados y genera el PDF de la cuenta de cobro
+// @Request: AccountStatementConfirmRequest
+// @Response: PDF file
+func (h *OrderHandler) ConfirmAccountStatement(c echo.Context) error {
+	orderID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return response.BadRequest(c, "Invalid order ID", err)
+	}
+
+	var req dto.AccountStatementConfirmRequest
+	if err := c.Bind(&req); err != nil {
+		return response.BadRequest(c, "Invalid request body", err)
+	}
+
+	// Validar campos requeridos
+	if req.ClientName == "" || req.City == "" || req.Concept == "" {
+		return response.BadRequest(c, "ClientName, City, and Concept are required", nil)
+	}
+
+	// Primero obtener el draft para tener todos los datos base
+	draftData, err := h.generateAccountStatementUC.GetDraft(c.Request().Context(), uint(orderID))
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get account statement data", err)
+	}
+
+	// Actualizar con los datos confirmados por el usuario
+	draftData.ClientName = req.ClientName
+	draftData.City = req.City
+	draftData.Date = req.Date
+	draftData.Concept = req.Concept
+
+	// Generar el PDF
+	pdfBytes, err := h.generateAccountStatementUC.GeneratePDF(c.Request().Context(), *draftData)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to generate account statement PDF", err)
+	}
+
+	// Configurar headers para descarga de PDF
+	c.Response().Header().Set("Content-Type", "application/pdf")
+	c.Response().Header().Set("Content-Disposition", "attachment; filename=cuenta_cobro.pdf")
+
+	return c.Blob(200, "application/pdf", pdfBytes)
 }
