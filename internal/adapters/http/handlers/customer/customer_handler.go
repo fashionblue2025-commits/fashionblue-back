@@ -52,15 +52,17 @@ func NewCustomerHandler(
 }
 
 type CreateCustomerRequest struct {
-	Name        string             `json:"name" validate:"required"`
-	Phone       string             `json:"phone" validate:"required"`
-	Address     string             `json:"address"`
-	RiskLevel   entities.RiskLevel `json:"risk_level" validate:"required"`
-	ShirtSizeID *uint              `json:"shirt_size_id"`
-	PantsSizeID *uint              `json:"pants_size_id"`
-	ShoesSizeID *uint              `json:"shoes_size_id"`
-	Birthday    *string            `json:"birthday"` // Formato: YYYY-MM-DD
-	Notes       string             `json:"notes"`
+	Name             string             `json:"name" validate:"required"`
+	Phone            string             `json:"phone" validate:"required"`
+	Address          string             `json:"address"`
+	RiskLevel        entities.RiskLevel `json:"risk_level" validate:"required"`
+	ShirtSizeID      *uint              `json:"shirt_size_id"`
+	PantsSizeID      *uint              `json:"pants_size_id"`
+	ShoesSizeID      *uint              `json:"shoes_size_id"`
+	Birthday         *string            `json:"birthday"` // Formato: YYYY-MM-DD
+	Notes            string             `json:"notes"`
+	PaymentDays      string             `json:"payment_days"`
+	PaymentFrequency string             `json:"payment_frequency"`
 }
 
 type UpdateCustomerRequest struct {
@@ -99,16 +101,18 @@ func (h *CustomerHandler) Create(c echo.Context) error {
 	}
 
 	cust := &entities.Customer{
-		Name:        req.Name,
-		Phone:       req.Phone,
-		Address:     req.Address,
-		RiskLevel:   req.RiskLevel,
-		ShirtSizeID: req.ShirtSizeID,
-		PantsSizeID: req.PantsSizeID,
-		ShoesSizeID: req.ShoesSizeID,
-		Birthday:    parsedBirthday,
-		Notes:       req.Notes,
-		IsActive:    true,
+		Name:             req.Name,
+		Phone:            req.Phone,
+		Address:          req.Address,
+		RiskLevel:        req.RiskLevel,
+		ShirtSizeID:      req.ShirtSizeID,
+		PantsSizeID:      req.PantsSizeID,
+		ShoesSizeID:      req.ShoesSizeID,
+		Birthday:         parsedBirthday,
+		Notes:            req.Notes,
+		IsActive:         true,
+		PaymentDays:      req.PaymentDays,
+		PaymentFrequency: entities.PaymentFrequency(req.PaymentFrequency),
 	}
 
 	if err := h.createCustomerUC.Execute(c.Request().Context(), cust); err != nil {
